@@ -17,15 +17,23 @@ public class ZigBeeDevice {
     /**
      * The end point.
      */
-    private int endPoint;
+    private int endpoint;
     /**
      * The profile ID.
      */
     private int profileId;
     /**
+     * The logical type of the device.
+     */
+    private int deviceType;
+    /**
      * The device ID.
      */
     private int deviceId;
+    /**
+     * The manufacturer code.
+     */
+    private int manufacturerCode;
     /**
      * The device version.
      */
@@ -38,7 +46,10 @@ public class ZigBeeDevice {
      * Output clusters.
      */
     private int[] outputClusterIds;
-
+    /**
+     * Label.
+     */
+    private String label;
     /**
      * Gets the device ID.
      * @return the device ID
@@ -75,16 +86,16 @@ public class ZigBeeDevice {
      * Gets end point.
      * @return the end point
      */
-    public int getEndPoint() {
-        return endPoint;
+    public int getEndpoint() {
+        return endpoint;
     }
 
     /**
      * Sets end point
-     * @param endPoint the end point
+     * @param endpoint the end point
      */
-    public void setEndPoint(int endPoint) {
-        this.endPoint = endPoint;
+    public void setEndpoint(int endpoint) {
+        this.endpoint = endpoint;
     }
 
     /**
@@ -167,15 +178,66 @@ public class ZigBeeDevice {
         this.profileId = profileId;
     }
 
+    /**
+     * Gets device logical type.
+     * @return the device logical type.
+     */
+    public int getDeviceType() {
+        return deviceType;
+    }
+
+    /**
+     * Sets device logical type.
+     * @param deviceType the device logical type
+     */
+    public void setDeviceType(int deviceType) {
+        this.deviceType = deviceType;
+    }
+
+    /**
+     * Gets manufacturer code.
+     * @return the manufacturer code.
+     */
+    public int getManufacturerCode() {
+        return manufacturerCode;
+    }
+
+    /**
+     * Sets manufacturer code.
+     * @param manufacturerCode the manufacturer code.
+     */
+    public void setManufacturerCode(int manufacturerCode) {
+        this.manufacturerCode = manufacturerCode;
+    }
+
+    /**
+     * Gets label.
+     * @return the label
+     */
+    public String getLabel() {
+        return label;
+    }
+
+    /**
+     * Sets label.
+     * @param label the label
+     */
+    public void setLabel(String label) {
+        this.label = label;
+    }
+
     @Override
     public String toString() {
         return "ZigBeeDevice " +
-                "deviceId=" + deviceId +
-                ", deviceVersion=" + deviceVersion +
-                ", ieeeAddress=" + ieeeAddress +
+                "label=" + label +
                 ", networkAddress=" + networkAddress +
-                ", endPoint=" + endPoint +
+                ", endpoint=" + endpoint +
+                ", ieeeAddress=" + ieeeAddress +
                 ", profileId=" + profileId +
+                ", deviceType=" + deviceType +
+                ", deviceId=" + deviceId +
+                ", manufacturerCode=" + manufacturerCode +
+                ", deviceVersion=" + deviceVersion +
                 ", inputClusterIds=" + Arrays.toString(inputClusterIds) +
                 ", outputClusterIds=" + Arrays.toString(outputClusterIds);
     }

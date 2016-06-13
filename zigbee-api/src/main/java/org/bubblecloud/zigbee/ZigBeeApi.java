@@ -24,7 +24,8 @@ import org.bubblecloud.zigbee.network.discovery.ZigBeeDiscoveryManager;
 import org.bubblecloud.zigbee.network.impl.*;
 import org.bubblecloud.zigbee.network.model.IEEEAddress;
 import org.bubblecloud.zigbee.network.zcl.ZclCommand;
-import org.bubblecloud.zigbee.network.zcl.ZclCommandListener;
+import org.bubblecloud.zigbee.network.zdo.ZdoCommand;
+import org.bubblecloud.zigbee.simple.CommandListener;
 import org.bubblecloud.zigbee.network.zcl.ZclCommandTransmitter;
 import org.bubblecloud.zigbee.network.model.DiscoveryMode;
 import org.bubblecloud.zigbee.network.model.DriverStatus;
@@ -42,9 +43,10 @@ import org.bubblecloud.zigbee.api.device.lighting.*;
 import org.bubblecloud.zigbee.api.device.impl.*;
 import org.bubblecloud.zigbee.api.DeviceBase;
 import org.bubblecloud.zigbee.network.SerialPort;
+import org.bubblecloud.zigbee.network.zdo.ZdoCommandTransmitter;
 import org.bubblecloud.zigbee.simple.SimpleZigBeeApi;
-import org.bubblecloud.zigbee.network.zcl.ZclApi;
 import org.bubblecloud.zigbee.simple.ZigBeeDevice;
+import org.bubblecloud.zigbee.simple.ZigBeeNetwork;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,7 +89,7 @@ import java.util.*;
  * @author <a href="mailto:christopherhattonuk@gmail.com">Chris Hatton</a>
  * @author <a href="mailto:chris@cd-jackson.com">Chris Jackson</a>
  */
-public class ZigBeeApi implements EndpointListener, ZclApi {
+public class ZigBeeApi implements EndpointListener, ZigBeeNetwork {
     /**
      * The {@link Logger}.
      */
@@ -105,13 +107,17 @@ public class ZigBeeApi implements EndpointListener, ZclApi {
      */
     private ZigBeeApiContext context;
     /**
-     * The {@link ZigBeeNetwork ZigBee network}.
+     * The {@link org.bubblecloud.zigbee.network.impl.ZigBeeNetwork ZigBee network}.
      */
-    private ZigBeeNetwork network;
+    private org.bubblecloud.zigbee.network.impl.ZigBeeNetwork network;
     /**
-     * Cluster request receiver.
+     * The ZCL command transmitter.
      */
     private ZclCommandTransmitter zclCommandTransmitter;
+    /**
+     * The ZDO command transmitter.
+     */
+    private ZdoCommandTransmitter zdoCommandTransmitter;
     /**
      * Flag to reset the network on startup
      */
@@ -131,7 +137,8 @@ public class ZigBeeApi implements EndpointListener, ZclApi {
 
         networkManager = new ZigBeeNetworkManagerImpl(port, NetworkMode.Coordinator, pan, channel, 2500L);
         zclCommandTransmitter = new ZclCommandTransmitter(networkManager);
-        networkManager.addAFMessageListener(zclCommandTransmitter);
+        zdoCommandTransmitter = new ZdoCommandTransmitter(networkManager);
+
         discoveryManager = new ZigBeeDiscoveryManager(networkManager, discoveryModes);
         network = ApplicationFrameworkLayer.getAFLayer(networkManager).getZigBeeNetwork();
 
@@ -139,7 +146,7 @@ public class ZigBeeApi implements EndpointListener, ZclApi {
 
         context = new ZigBeeApiContext();
 
-        final ClusterFactory clusterFactory = new ClusterFactoryImpl(context);
+        final ClusterFactory clusterFactory = new ClusterFactoryImpl();
         context.setClusterFactory(clusterFactory);
 
         try {
@@ -177,6 +184,9 @@ public class ZigBeeApi implements EndpointListener, ZclApi {
         if (!networkManager.startup()) {
             return false;
         }
+
+        networkManager.addAFMessageListener(zclCommandTransmitter);
+        networkManager.addAsynchronousCommandListener(zdoCommandTransmitter);
 
         return initializeNetwork(this.resetNetwork);
     }
@@ -351,11 +361,11 @@ public class ZigBeeApi implements EndpointListener, ZclApi {
     }
 
     /**
-     * Gets the {@link ZigBeeNetwork ZigBee network}.
+     * Gets the {@link org.bubblecloud.zigbee.network.impl.ZigBeeNetwork ZigBee network}.
      *
      * @return the ZigBee network.
      */
-    public ZigBeeNetwork getZigBeeNetwork() {
+    public org.bubblecloud.zigbee.network.impl.ZigBeeNetwork getZigBeeNetwork() {
         return network;
     }
 
@@ -473,8 +483,13 @@ public class ZigBeeApi implements EndpointListener, ZclApi {
      * @throws ZigBeeNetworkManagerException if exception occurs in sending
      */
     @Override
-    public int sendCommand(final ZclCommand command) throws ZigBeeException {
-        return zclCommandTransmitter.sendCommand(command.toCommandMessage());
+    public int sendCommand(org.bubblecloud.zigbee.simple.Command command) throws ZigBeeException {
+        if (command instanceof  ZclCommand) {
+            return zclCommandTransmitter.sendCommand(((ZclCommand)command).toCommandMessage());
+        }  else {
+            zdoCommandTransmitter.sendCommand((ZdoCommand) command);
+            return -1;
+        }
     }
 
     /**
@@ -482,8 +497,9 @@ public class ZigBeeApi implements EndpointListener, ZclApi {
      * @param commandListener the command listener
      */
     @Override
-    public void addCommandListener(final ZclCommandListener commandListener) {
+    public void addCommandListener(final CommandListener commandListener) {
         this.zclCommandTransmitter.addCommandListener(commandListener);
+        this.zdoCommandTransmitter.addCommandListener(commandListener);
     }
 
     /**
@@ -491,8 +507,9 @@ public class ZigBeeApi implements EndpointListener, ZclApi {
      * @param commandListener the command listener
      */
     @Override
-    public void removeCommandListener(final ZclCommandListener commandListener) {
+    public void removeCommandListener(final CommandListener commandListener) {
         this.zclCommandTransmitter.removeCommandListener(commandListener);
+        this.zdoCommandTransmitter.removeCommandListener(commandListener);
     }
 
     /**
@@ -511,7 +528,7 @@ public class ZigBeeApi implements EndpointListener, ZclApi {
             final ZigBeeDevice zigBeeDevice = new ZigBeeDevice();
             zigBeeDevice.setIeeeAddress(IEEEAddress.fromColonNotation(device.getIeeeAddress()));
             zigBeeDevice.setNetworkAddress(device.getNetworkAddress());
-            zigBeeDevice.setEndPoint(device.getEndPointAddress());
+            zigBeeDevice.setEndpoint(device.getEndPointAddress());
             zigBeeDevice.setProfileId(device.getProfileId());
             zigBeeDevice.setDeviceId(device.getDeviceTypeId());
             zigBeeDevice.setDeviceVersion(device.getDeviceVersion());
@@ -521,4 +538,5 @@ public class ZigBeeApi implements EndpointListener, ZclApi {
         }
         return zigBeeDevices;
     }
+
 }

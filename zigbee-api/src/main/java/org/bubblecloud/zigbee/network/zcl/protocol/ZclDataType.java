@@ -1,6 +1,5 @@
 package org.bubblecloud.zigbee.network.zcl.protocol;
 
-import org.bubblecloud.zigbee.network.packet.ZToolAddress64;
 import org.bubblecloud.zigbee.network.zcl.field.*;
 
 public enum ZclDataType {
@@ -21,6 +20,7 @@ public enum ZclDataType {
     N_X_UNSIGNED_8_BIT_INTEGER("N X Unsigned 8-bit integer",Unsigned8BitInteger.class),
     N_X_WRITE_ATTRIBUTE_RECORD("N X Write attribute record",WriteAttributeRecord.class),
     N_X_WRITE_ATTRIBUTE_STATUS_RECORD("N X Write attribute status record",WriteAttributeStatusRecord.class),
+    OCTET_STRING("Octet string",String.class),
     SIGNED_16_BIT_INTEGER("Signed 16-bit integer",Integer.class),
     SIGNED_8_BIT_INTEGER("Signed 8-bit integer",Integer.class),
     UNSIGNED_16_BIT_INTEGER("Unsigned 16-bit integer",Integer.class),
@@ -32,9 +32,9 @@ public enum ZclDataType {
     _8_BIT_DATA("8-bit data",Integer.class),
     _8_BIT_ENUMERATION("8-bit enumeration",Integer.class);
     private final String label;
-    private final Class dataClass;
+    private final Class<?> dataClass;
 
-    ZclDataType(final String label, final Class dataClass) {
+    ZclDataType(final String label, final Class<?> dataClass) {
         this.label = label;
         this.dataClass = dataClass;
     }
